@@ -1,6 +1,10 @@
 # Vision Transformer (ViT)
 
-The Vision Transformer (ViT) demonstrates the implementation of a transformer task for computer vision tasks. My implementation dynamically processes 2D, 3D, and 4D input data.
+The Vision Transformer (ViT) demonstrates the application of a transformer-based architecture specifically for computer vision tasks. My implementation stands out by dynamically processing 2D, 3D, and 4D input data with an adaptable pipeline. This dynamic handling ensures compatibility with different types of input, ranging from static images to complex multi-dimensional data, such as videos with a time dimension.
+
+The core of my implementation focuses on preserving spatial, temporal, and depth-related information across these data types. By leveraging a combination of Conv2D and Conv3D layers for patch embedding, the model effectively transforms raw input data into fixed-length token representations for any input. This flexibility is crucial for ensuring accurate and efficient processing of different input formats within the same model.
+
+By reorganizing the pipeline to merge input channels and time dimensions specifically for 4D input, I reduced redundant computations. This implementation highlights a strong emphasis on modularity, making it capable of adapting to new input formats with minimal reconfiguration.
 
 ## Features
 - **Dynamic Input Hnadling**:
