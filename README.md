@@ -8,9 +8,9 @@ By reorganizing the pipeline to merge input channels and time dimensions specifi
 
 ## Features
 - **Dynamic Input Hnadling**:
-  - Processes 2D inputs like images.
-  - Handles 3D inputs such as videos with depth frames.
-  - Adapts to 4D inputs, combining time and channels.
+  - Processes 2D inputs like images (height x width) .
+  - Handles 3D inputs like images with a depth dimension (height x width x depth).
+  - Adapts to 4D inputs, combining time and channels (height x width x depth x time).
 - **Core Componenets**:
    - **Patch Embedding**: Converts raw inputs into fixed-size patches and embeds them into tokens suitable for trnasformer processing
        - Utilizes Conv2D and Conv3D for efficient extraction of patches.
