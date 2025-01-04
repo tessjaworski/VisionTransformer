@@ -62,21 +62,20 @@ class VisionTransformer(nn.Module):
        x = self.patch_embedding(x)
        print(f"After Patch Embedding: {x.shape}")
 
-       # Handles 4D data by checking for time and if tensor is 5D
-       if self.time_size is not None and x.ndim == 5:
-            bt = x.size(0)  # this is the batch x time dimension
-            B = bt // self.time_size  # computes original batch size by dividing (batch x time) by time
-            x = x.view(B, self.time_size, x.size(1), x.size(2), x.size(3), x.size(4))  # unmerges batch and time
-
-            # Reorder to (B, embed_dim, D, T, H, W) so length of spatial dims after skipping first two dimensions is 4
-            x = x.permute(0, 2, 3, 1, 4, 5)
 
        batch_size = x.size(0)
-       spatial_dims = x.size()[2:] # Spatial dim are remaining dimensions after batch and channel
-       print(f"spatial_dims: {spatial_dims}, len(spatial_dims) = {len(spatial_dims)}")
+       spatial_dims = x.size()[2:]  # Spatial dim are remaining dimensions after batch and channel
+
+       # Handles 4D input
+       if self.depth_size and self.time_size and len(spatial_dims) == 3:
+           # Correct spatial_dims to include depth and time
+           spatial_dims = (self.depth_size, self.time_size, spatial_dims[-2], spatial_dims[-1])
+           print(f"Spatial dimensions inferred (4D corrected): {spatial_dims}, len(spatial_dims): {len(spatial_dims)}")
+       else:
+           print(f"Spatial dimensions inferred: {spatial_dims}, len(spatial_dims): {len(spatial_dims)}")
 
        seq_len = x.numel() // (batch_size * x.size(1))  # Number of patches
-       x = x.reshape(batch_size, seq_len, -1)  # Reshape to (batch_size, seq_len, embed_dim)
+       x = x.view(batch_size, seq_len, -1)  # Reshape to (batch_size, seq_len, embed_dim)
 
        # Dynamically initialize positional encoding based on seq_len
        if self.positional_encoding is None:
@@ -93,26 +92,18 @@ class VisionTransformer(nn.Module):
        # Reshape back to original dimensions for final output
        if len(spatial_dims) == 4:  # For 4D input
            depth, time, height, width = spatial_dims
-           x = x.view(batch_size, -1, depth, time, height, width)
-
-           x = x.permute(0, 3, 1, 2, 4, 5)  # moves time next to batch
-           b, t, e, d, h, w = x.shape
-           x = x.reshape(b * t, e, d, h, w)  # Combine batch and time for Conv3D
+           x = x.reshape(batch_size, -1, depth * time, height, width)  # Combine depth and time for Conv3D
 
            # Apply 4D projection
-           x = self.output_projection_4d(x)
+           x = self.output_projection_4d(x)  # Output has shape (batch_size, channels, depth * time, height, width)
 
-           out_channels = x.size(1)
-           x = x.view(b, t, out_channels, d, h, w)  # separate batch and time
-
-           # Permute to final shape (B, out_channels, D, T, H, W)
-           x = x.permute(0, 2, 3, 4, 5, 1)
-
+           # Reshape back to separate depth and time dimensions
+           x = x.reshape(batch_size, depth, time, height, width, -1).permute(0, 5, 1, 3, 4, 2)
        elif len(spatial_dims) == 3:  # For 3D input
            x = x.view(batch_size, spatial_dims[0], spatial_dims[1], spatial_dims[2], -1).permute(0, 4, 1, 2, 3)
            x = self.output_projection_3d(x)
-
        else:  # For 2D input
            x = x.view(batch_size, spatial_dims[0], spatial_dims[1], -1).permute(0, 3, 1, 2)
            x = self.output_projection_2d(x)
+
        return x
