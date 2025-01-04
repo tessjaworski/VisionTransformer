@@ -58,10 +58,10 @@ class PatchEmbedding(nn.Module):
 
     def forward(self, x):
 
-        if self.is_4d:  # Combine depth and time for 4D input before convolution
+        if self.is_4d:  # Combine batch and time for 4D input before convolution
             batch_size, channels, depth, height, width, time = x.shape
-            x = x.view(batch_size, channels, depth * time, height, width)  # Merge depth and time into one dimension
-            print(f"Combined depth and time: {x.shape}")
+            x = x.view(batch_size * time, channels, depth, height, width)
+            print(f"Combined batch and time: {x.shape}")
 
         x = self.conv(x)
         return x
