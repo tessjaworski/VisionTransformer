@@ -7,7 +7,7 @@ from models.transformer_encoder import TransformerEncoderBlock
 # Combines patch embedding, positional encoding, and transformer encoder
 
 class VisionTransformer(nn.Module):
-   def __init__(self, img_size, embed_dim, num_heads, ff_dim, num_layers, dropout=0.1, depth_size=None, time_size=None):
+   def __init__(self, img_size, embed_dim, num_heads, ff_dim, num_layers, dropout=0.1, depth_size=None, time_size=None, in_channels=3):
         super(VisionTransformer, self).__init__()
 
         self.depth_size = depth_size
@@ -16,7 +16,7 @@ class VisionTransformer(nn.Module):
         # Patch embedding layer
         # Handles 2D, 3D, and 4D inputs dynamically
         self.patch_embedding = PatchEmbedding(
-            in_channels=3,
+            in_channels=in_channels,
             embed_dim=embed_dim,
             kernel_size=1,
             stride=1,
@@ -56,11 +56,9 @@ class VisionTransformer(nn.Module):
         )
 
    def forward(self, x):
-       print(f"Input shape: {x.shape}")
 
        # Patch embedding
        x = self.patch_embedding(x)
-       print(f"After Patch Embedding: {x.shape}")
 
        # Handles 4D data by checking for time and if tensor is 5D
        if self.time_size is not None and x.ndim == 5:
@@ -73,7 +71,6 @@ class VisionTransformer(nn.Module):
 
        batch_size = x.size(0)
        spatial_dims = x.size()[2:] # Spatial dim are remaining dimensions after batch and channel
-       print(f"spatial_dims: {spatial_dims}, len(spatial_dims) = {len(spatial_dims)}")
 
        seq_len = x.numel() // (batch_size * x.size(1))  # Number of patches
        x = x.reshape(batch_size, seq_len, -1)  # Reshape to (batch_size, seq_len, embed_dim)
@@ -84,11 +81,13 @@ class VisionTransformer(nn.Module):
 
        # Apply positional encoding
        x = self.positional_encoding(x)
-       print(f"After Positional Encoding: {x.shape}")
 
        # Transformer encoder
-       x = self.encoder(x)
-       print(f"After Transformer Encoder: {x.shape}")
+       try:
+           x = self.encoder(x)
+       except Exception as e:
+           print(f"Error during Transformer Encoder: {e}")
+           raise
 
        # Reshape back to original dimensions for final output
        if len(spatial_dims) == 4:  # For 4D input
