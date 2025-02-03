@@ -25,9 +25,9 @@ class VisionTransformer(nn.Module):
             time_size=time_size
         )
 
-        # Positional encoding layer placeholder
-        # Dynamically initialized in forward pass
-        self.positional_encoding = None
+        # Initialize positional encoding in __init__
+        self.num_patches = (img_size[0] // 1) * (img_size[1] // 1)  # Update patch size logic
+        self.positional_encoding = PositionalEncoding(embed_dim=embed_dim, seq_len=self.num_patches)
 
         # Stack of transformer encoder blocks
         self.encoder = nn.Sequential(
@@ -74,10 +74,6 @@ class VisionTransformer(nn.Module):
 
        seq_len = x.numel() // (batch_size * x.size(1))  # Number of patches
        x = x.reshape(batch_size, seq_len, -1)  # Reshape to (batch_size, seq_len, embed_dim)
-
-       # Dynamically initialize positional encoding based on seq_len
-       if self.positional_encoding is None:
-           self.positional_encoding = PositionalEncoding(embed_dim=x.size(-1), seq_len=seq_len)
 
        # Apply positional encoding
        x = self.positional_encoding(x)

@@ -10,8 +10,7 @@ from preprocessing import list_pth_files, WeatherDataset, list_pth_files, split_
 def chunked_training_simple(
     folder_2d="sample_data/2D",
     num_time_steps=6,
-    chunk_size=10,
-    batch_size=8,
+    batch_size=16,
     num_epochs=20,
     reduced_size=20,
     checkpoint_path="vit_model.pth"
@@ -37,9 +36,11 @@ def chunked_training_simple(
     train_dataset = WeatherDataset(train_files, num_time_steps, reduced_size)
     val_dataset = WeatherDataset(val_files, num_time_steps, reduced_size)
 
-    # Create DataLoaders
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+    # Create Dataloaders
+    # Dataloaders take the dataset and load it in batches
+    # They shuffle the data to improve generalization
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     # Initialize ViT model
     vit = VisionTransformer(
@@ -52,12 +53,23 @@ def chunked_training_simple(
         dropout=0.3
     ).to(device)
 
+    # Mean squared error loss function
+    # Calculates average squared difference between predicted and actual values
     loss_fn = nn.MSELoss()
-    optimizer = optim.AdamW(vit.parameters(), lr=5e-6,weight_decay=1e-3)
 
+    # Defines optimizer for training
+    # Optimizer updates model weights during training
+    # Tells optimizer to update ViT model's weights
+    # Weight decay helps prevent overfitting and memorization of the data
+    optimizer = optim.AdamW(vit.parameters(), lr=1e-4, weight_decay=1e-3)
+
+    # Reduces learning rate when the model stops improving
+    # Monitors validation loss and reduces learning rate when it stops decreasing
+    # When triggered the LR is multiplied by 0.5
+    # If validation loss does not improve for 3 epochs, it reduces the learning rate
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
 
-    # Load checkpoint if exists
+    # Loads checkpoint if exists
     if os.path.exists(checkpoint_path):
         print(f"Loading checkpoint from {checkpoint_path}...")
         state_dict = torch.load(checkpoint_path, map_location=device)
@@ -68,58 +80,58 @@ def chunked_training_simple(
         print(f"No checkpoint found, starting fresh.")
 
     best_val_loss = float("inf")
-    patience = 7  # Stop if validation loss doesn't improve for 5 epochs
-    counter = 0
+    patience = 7  # Stops training completely if validation loss doesn't improve for 7 epochs
+    counter = 0   # Keeps track of how many epochs have passed without an improvement
 
     # Training Loop
     for epoch in range(num_epochs):
         print(f"\n=== Epoch {epoch + 1}/{num_epochs} ===")
-        vit.train()
-        total_loss = 0
+        vit.train()   # Sets model to training mode
+        total_loss = 0  # Initialize total loss for epoch
 
-        for inputs, targets in train_loader:
+        for inputs, targets in train_loader:  # Loads mini batches from the dataset
             inputs, targets = inputs.to(device), targets.to(device)
             inputs = inputs.permute(0, 1, 2, 3)  # Should be (B, T, H, W)
 
-            optimizer.zero_grad()
-            predictions = vit(inputs)
-            loss = loss_fn(predictions, targets)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(vit.parameters(), max_norm=1.0)
-            optimizer.step()
+            optimizer.zero_grad()  # Clears previous gradients
+            predictions = vit(inputs)  # Gets models predictions
+            loss = loss_fn(predictions, targets)  # Computes loss between predictions and targets using MSE
+            loss.backward()  # Computes gradients
+            torch.nn.utils.clip_grad_norm_(vit.parameters(), max_norm=1.0)  # Prevents exploding gradients
+            optimizer.step()  # Updates the model's weights
 
-            total_loss += loss.item()
+            total_loss += loss.item()  # Track the loss
 
-        avg_train_loss = total_loss / len(train_loader)
+        avg_train_loss = total_loss / len(train_loader)  # Computes average training loss
         print(f"Training Loss (epoch {epoch + 1}): {avg_train_loss:.4f}")
 
         # Validation
-        vit.eval()
-        total_val_loss = 0
-        with torch.no_grad():
-            for inputs, targets in val_loader:
+        vit.eval()  # Sets model to evaluation mode
+        total_val_loss = 0  # Initializes validation loss
+        with torch.no_grad():  # Disables gradients to speed up validation
+            for inputs, targets in val_loader:  # Iterates over mini batches
 
                 inputs, targets = inputs.to(device), targets.to(device)
 
-                if targets.ndim == 3:  # Add batch dimension if missing
-                    targets = targets.unsqueeze(0)
+                predictions = vit(inputs)  # Gets models predictions
 
-                predictions = vit(inputs)
-
-                targets = targets.expand(inputs.shape[0], -1, -1, -1)
-                loss = loss_fn(predictions, targets)
-                total_val_loss += loss.item()
+                loss = loss_fn(predictions, targets)  # Computes loss
+                total_val_loss += loss.item()  # Accumulates loss
 
 
-        avg_val_loss = total_val_loss / len(val_loader)
+        avg_val_loss = total_val_loss / len(val_loader)  # Computes average validation loss
         print(f"Validation Loss (epoch {epoch + 1}): {avg_val_loss:.4f}")
 
+
+        # If validation loss improves, save model
+        # If it doesn't improve, increase counter
+        # Stop training if no improvement
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             torch.save(vit.state_dict(), checkpoint_path)  # Save only best model
             counter = 0  # Reset counter
         else:
-            counter += 1
+            counter += 1  # Increase patience counter
 
         if counter >= patience:
             print(f"Early stopping at epoch {epoch + 1}")
@@ -137,7 +149,7 @@ def main():
     chunked_training_simple(
         folder_2d="sample_data/2D",
         num_time_steps=6,
-        batch_size=8,
+        batch_size=16,
         num_epochs=20,
         reduced_size=20
     )
