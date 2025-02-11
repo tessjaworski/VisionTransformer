@@ -18,7 +18,7 @@ def chunked_training_simple(
 
     # Splits files into (train, val, test) chronologically.
     # For each epoch, loads training data in chunks of 'chunk_size' files.
-    # Converts each chunk to tensors, does a manual training loop with 'batch_size' mini-batches.
+    # Converts each chunk to tensors, does a training loop with 'batch_size' mini-batches.
     # Repeats for val and test at the end.
     # Replicates the target to 3 channels, matching a model output of (B, 3, H, W).
 

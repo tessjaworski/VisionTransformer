@@ -4,9 +4,6 @@ import numpy as np
 from torch.utils.data import Dataset
 
 # prepares the raw dataset for my ViT model
-# data slicing: input and output pairs (ex: use the first 6 time steps to predict the 7th time step)
-# data splitting:
-# patch splitting: divide each spatial grid (900 x 600) into smaller patches (30 x 30)
 
 
 # Gathers all .pth files and sorts in ascending order
