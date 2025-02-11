@@ -38,7 +38,8 @@ def chunked_training_simple(
 
     # Create Dataloaders
     # Dataloaders take the dataset and load it in batches
-    # They shuffle the data to improve generalization
+    # They shuffle the batches to improve generalization
+    # The batches are shuffled but the individual sequences are in tact
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
