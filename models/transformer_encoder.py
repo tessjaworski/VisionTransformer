@@ -44,19 +44,23 @@ class TransformerEncoderBlock(nn.Module):
 
     def forward(self, x):
         try:
-            # Input shape debugging
-
+            # apply layer norm before attention
+            norm_x = self.norm1(x)
             # Multi-head self-attention
-            attn_output, _ = self.self_attention(x, x, x)
+            attn_output, _ = self.self_attention(x, norm_x, norm_x)
+
+            # Implemented sip connection to ensure the model doesn't lose previous details
+            # First residual connection
+            x = self.dropout(attn_output)
 
             # Add & Normalize
-            x = self.norm1(x + self.dropout(attn_output))
+            norm_x = self.norm2(x)
 
             # Feed-forward network
-            ff_output = self.feed_forward(x)
+            ff_output = self.feed_forward(norm_x)
 
-            # Add & Normalize
-            x = self.norm2(x + self.dropout(ff_output))
+            # Second residual connection
+            x = x + self.feed_forward(norm_x)
 
         except Exception as e:
             print(f"Error in Transformer Block: {e}")
