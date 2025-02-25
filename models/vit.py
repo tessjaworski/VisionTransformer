@@ -26,7 +26,7 @@ class VisionTransformer(nn.Module):
         )
 
         # Initialize positional encoding in __init__
-        self.num_patches = (img_size[0] // 1) * (img_size[1] // 1)  # Update patch size logic
+        self.num_patches = (img_size[0] // 16) * (img_size[1] // 16)  # Update patch size logic
         self.positional_encoding = PositionalEncoding(embed_dim=embed_dim, seq_len=self.num_patches)
 
         # Stack of transformer encoder blocks

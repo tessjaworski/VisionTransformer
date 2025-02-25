@@ -8,7 +8,10 @@ import torch
 import torch.nn as nn
 
 class PatchEmbedding(nn.Module):
-    def __init__(self, in_channels, embed_dim, kernel_size=3, stride=1, padding=1, depth_size=None, time_size=None):
+    def __init__(self, in_channels, embed_dim, kernel_size=16, stride=16, padding=0, depth_size=None, time_size=None):
+
+        # kernel size and stride should be equal so patches do not overlap and all patches are 16x16
+        # ^^ from "Dive into Deep Learning" textbook
 
         # in_channels: number of input channels. ex: RGB has 3 input channels
         # embed_dim: dimension of the patch embeddings. every patch is transformed into a list with "embed_dim" amount of numbers

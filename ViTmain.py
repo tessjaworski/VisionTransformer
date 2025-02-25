@@ -70,7 +70,7 @@ def chunked_training_simple(
     # If validation loss does not improve for 3 epochs, it reduces the learning rate
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=3)
 
-    # Loads checkpoint if exists
+   # Loads checkpoint if exists
     if os.path.exists(checkpoint_path):
         print(f"Loading checkpoint from {checkpoint_path}...")
         state_dict = torch.load(checkpoint_path, map_location=device)
@@ -78,7 +78,8 @@ def chunked_training_simple(
         vit.load_state_dict(state_dict, strict=False)
         print("Checkpoint loaded successfully.")
     else:
-        print(f"No checkpoint found, starting fresh.")
+       print(f"No checkpoint found, starting fresh.")
+
 
     best_val_loss = float("inf")
     patience = 7  # Stops training completely if validation loss doesn't improve for 7 epochs
