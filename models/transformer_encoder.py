@@ -44,23 +44,26 @@ class TransformerEncoderBlock(nn.Module):
 
     def forward(self, x):
         try:
+            # pre norm: normalization is applied right before attention and feed forward
+            # pre norm leads to more effective training according to "Dive into Deep Learning"
             # apply layer norm before attention
             norm_x = self.norm1(x)
             # Multi-head self-attention
-            attn_output, _ = self.self_attention(x, norm_x, norm_x)
+            # entire attention layer sees a normalized output
+            attn_output, _ = self.self_attention(norm_x, norm_x, norm_x)
 
             # Implemented sip connection to ensure the model doesn't lose previous details
             # First residual connection
-            x = self.dropout(attn_output)
+            x = x + self.dropout(attn_output)
 
-            # Add & Normalize
+            # pre norm before feed forward
             norm_x = self.norm2(x)
 
             # Feed-forward network
             ff_output = self.feed_forward(norm_x)
 
             # Second residual connection
-            x = x + self.feed_forward(norm_x)
+            x = x + self.dropout(ff_output)
 
         except Exception as e:
             print(f"Error in Transformer Block: {e}")
