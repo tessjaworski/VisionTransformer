@@ -18,8 +18,8 @@ class VisionTransformer(nn.Module):
         self.patch_embedding = PatchEmbedding(
             in_channels=in_channels,
             embed_dim=embed_dim,
-            kernel_size=1,
-            stride=1,
+            kernel_size=16,
+            stride=16,
             padding=0,
             depth_size=depth_size,
             time_size=time_size
